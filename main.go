@@ -13,8 +13,11 @@ import (
 	"google.golang.org/api/option"
 )
 
+var (
+	tokenFile = "token.json"
+)
+
 func getToken(config *oauth2.Config) (*oauth2.Token, error) {
-	tokenFile := "token.json"
 
 	if token, err := tokenFromFile(tokenFile); err == nil {
 		return token, nil
@@ -92,8 +95,27 @@ func main() {
 		log.Fatalf("error when receive a lists of calendars: %v", err)
 	}
 
+	lists_of_calendars := make(map[int]string)
 	fmt.Println("ivailable calendars:")
-	for _, item := range calendars.Items {
-		fmt.Printf("- %s (%s)\n", item.Summary, item.Id)
+	for i, item := range calendars.Items {
+		fmt.Printf("%d - %s (%s)\n", i, item.Summary, item.Id)
+		lists_of_calendars[i] = item.Id
+	}
+
+	var number_of_calendar int
+	fmt.Printf("Which calendar could you want to use: ")
+	_, err = fmt.Scanf("%d", &number_of_calendar)
+	if err != nil {
+		log.Fatalf("error when parsing number of calendar: %v", err)
+	}
+
+	//TODO: normal parsing for time zones
+	events, err := srv.Events.List(lists_of_calendars[number_of_calendar]).TimeMin("2025-05-24T10:00:00+03:00").TimeMax("2025-05-31T10:00:00+03:00").Do()
+	if err != nil {
+		log.Fatalf("error when receive events: %v", err)
+	}
+	for _, event := range events.Items {
+		fmt.Printf("ColorId: %s Creator: %s, Start: %s, End: %s, Summary: %s\n", event.ColorId, event.Creator, event.Start, event.End,
+			event.Summary)
 	}
 }
