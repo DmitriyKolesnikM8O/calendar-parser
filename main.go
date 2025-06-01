@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -109,13 +110,45 @@ func main() {
 		log.Fatalf("error when parsing number of calendar: %v", err)
 	}
 
-	//TODO: normal parsing for time zones
-	events, err := srv.Events.List(lists_of_calendars[number_of_calendar]).TimeMin("2025-05-24T10:00:00+03:00").TimeMax("2025-05-31T10:00:00+03:00").Do()
+	//TODO: normal parsing time
+	var time_start, time_end string
+	fmt.Printf("Write time start for parsing (format: YYYY-MM-DD): ")
+	_, err = fmt.Scanf("%s", &time_start)
+	if err != nil {
+		log.Fatalf("error when parsing time of events: %v", err)
+	}
+	fmt.Printf("Write time end for parsing (format: YYYY-MM-DD): ")
+	_, err = fmt.Scanf("%s", &time_end)
+	if err != nil {
+		log.Fatalf("error when parsing time end of events: %v", err)
+	}
+
+	events, err := srv.Events.List(lists_of_calendars[number_of_calendar]).TimeMin(time_start + "T10:00:00+03:00").TimeMax(time_end + "T10:00:00+03:00").Do()
 	if err != nil {
 		log.Fatalf("error when receive events: %v", err)
 	}
+
+	events_color_time := make(map[string][]time.Duration)
 	for _, event := range events.Items {
 		fmt.Printf("ColorId: %s Creator: %s, Start: %s, End: %s, Summary: %s\n", event.ColorId, event.Creator, event.Start, event.End,
 			event.Summary)
+		//TODO: fix err in parsing
+		start, err := time.Parse(time.RFC3339, event.Start.DateTime)
+		if err != nil {
+			log.Println("error parsing start time: %v", err)
+			return
+		}
+		end, err := time.Parse(time.RFC3339, event.End.DateTime)
+		if err != nil {
+			log.Println("error parsing end time: %v", err)
+			return
+		}
+
+		duration := end.Sub(start)
+		events_color_time[event.ColorId] = append(events_color_time[event.ColorId], duration)
+	}
+
+	for i, k := range events_color_time {
+		fmt.Printf("ColorId: %s, duration: %s\n", i, k)
 	}
 }
