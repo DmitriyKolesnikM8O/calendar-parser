@@ -110,7 +110,6 @@ func main() {
 		log.Fatalf("error when parsing number of calendar: %v", err)
 	}
 
-	//TODO: normal parsing time
 	var time_start, time_end string
 	fmt.Printf("Write time start for parsing (format: YYYY-MM-DD): ")
 	_, err = fmt.Scanf("%s", &time_start)
@@ -128,11 +127,14 @@ func main() {
 		log.Fatalf("error when receive events: %v", err)
 	}
 
-	events_color_time := make(map[string][]time.Duration)
+	events_color_time := make(map[string][]struct {
+		Start, End *calendar.EventDateTime
+		Duration   time.Duration
+	})
 	for _, event := range events.Items {
 		fmt.Printf("ColorId: %s Creator: %s, Start: %s, End: %s, Summary: %s\n", event.ColorId, event.Creator, event.Start, event.End,
 			event.Summary)
-		//TODO: fix err in parsing
+
 		start, err := time.Parse(time.RFC3339, event.Start.DateTime)
 		if err != nil {
 			log.Println("error parsing start time: %v", err)
@@ -145,7 +147,16 @@ func main() {
 		}
 
 		duration := end.Sub(start)
-		events_color_time[event.ColorId] = append(events_color_time[event.ColorId], duration)
+
+		events_color_time[event.ColorId] = append(events_color_time[event.ColorId], struct {
+			Start    *calendar.EventDateTime
+			End      *calendar.EventDateTime
+			Duration time.Duration
+		}{
+			Start:    event.Start,
+			End:      event.End,
+			Duration: duration,
+		})
 	}
 
 	for i, k := range events_color_time {
