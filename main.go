@@ -14,8 +14,25 @@ import (
 	"google.golang.org/api/option"
 )
 
+/*
+6 - красный цвет
+2 - зеленый цвет
+_ - синий цвет
+3 - фиолетовый цвет
+4 - фламинго
+5 - желтый
+*/
+
 var (
-	tokenFile = "token.json"
+	tokenFile  = "token.json"
+	colorNames = map[string]string{
+		"6": "red",
+		"2": "green",
+		"":  "blue",
+		"3": "violet",
+		"4": "flamingo",
+		"5": "yellow",
+	}
 )
 
 func getToken(config *oauth2.Config) (*oauth2.Token, error) {
@@ -67,6 +84,33 @@ func saveToken(path string, token *oauth2.Token) error {
 	return json.NewEncoder(f).Encode(token)
 }
 
+// TODO: it is bad to send struct as parameter???????
+func statistics(eventsColorTime map[string][]struct {
+	Start    *calendar.EventDateTime
+	End      *calendar.EventDateTime
+	Duration time.Duration
+}, timeStart string, timeEnd string) {
+
+	for colorID, timeRanges := range eventsColorTime {
+		color := colorNames[colorID]
+		if color == "" {
+			log.Printf("error when parsing color in statistics func\n")
+		}
+		totalTimeForEveryColorMinutes := 0
+		for _, timeRange := range timeRanges {
+			totalTimeForEveryColorMinutes += int(timeRange.Duration/time.Second) / 60
+		}
+		totalTimeForEveryColorHours := totalTimeForEveryColorMinutes / 60
+		totalTimeForEveryColorMinutes %= 60
+		fmt.Printf("Total time for color %s on period from %s to %s - %d hourse %d minutes\n", color, timeStart, timeEnd, totalTimeForEveryColorHours,
+			totalTimeForEveryColorMinutes)
+
+	}
+
+}
+
+// TODO: too much main function
+// TODO: long celectors and other garbage in code
 func main() {
 	ctx := context.Background()
 
@@ -96,44 +140,44 @@ func main() {
 		log.Fatalf("error when receive a lists of calendars: %v", err)
 	}
 
-	lists_of_calendars := make(map[int]string)
+	listsOfCalendars := make(map[int]string)
 	fmt.Println("ivailable calendars:")
 	for i, item := range calendars.Items {
 		fmt.Printf("%d - %s (%s)\n", i, item.Summary, item.Id)
-		lists_of_calendars[i] = item.Id
+		listsOfCalendars[i] = item.Id
 	}
 
-	var number_of_calendar int
+	var numberOfCalendar int
 	fmt.Printf("Which calendar could you want to use: ")
-	_, err = fmt.Scanf("%d", &number_of_calendar)
+	_, err = fmt.Scanf("%d", &numberOfCalendar)
 	if err != nil {
 		log.Fatalf("error when parsing number of calendar: %v", err)
 	}
 
-	var time_start, time_end string
+	var timeStart, timeEnd string
 	fmt.Printf("Write time start for parsing (format: YYYY-MM-DD): ")
-	_, err = fmt.Scanf("%s", &time_start)
+	_, err = fmt.Scanf("%s", &timeStart)
 	if err != nil {
 		log.Fatalf("error when parsing time of events: %v", err)
 	}
 	fmt.Printf("Write time end for parsing (format: YYYY-MM-DD): ")
-	_, err = fmt.Scanf("%s", &time_end)
+	_, err = fmt.Scanf("%s", &timeEnd)
 	if err != nil {
 		log.Fatalf("error when parsing time end of events: %v", err)
 	}
 
-	events, err := srv.Events.List(lists_of_calendars[number_of_calendar]).TimeMin(time_start + "T10:00:00+03:00").TimeMax(time_end + "T10:00:00+03:00").Do()
+	events, err := srv.Events.List(listsOfCalendars[numberOfCalendar]).TimeMin(timeStart + "T10:00:00+03:00").TimeMax(timeEnd + "T10:00:00+03:00").Do()
 	if err != nil {
 		log.Fatalf("error when receive events: %v", err)
 	}
 
-	events_color_time := make(map[string][]struct {
+	eventsColorTime := make(map[string][]struct {
 		Start, End *calendar.EventDateTime
 		Duration   time.Duration
 	})
 	for _, event := range events.Items {
-		fmt.Printf("ColorId: %s Creator: %s, Start: %s, End: %s, Summary: %s\n", event.ColorId, event.Creator, event.Start, event.End,
-			event.Summary)
+		// fmt.Printf("ColorId: %s Creator: %s, Start: %s, End: %s, Summary: %s\n", event.ColorId, event.Creator, event.Start, event.End,
+		// event.Summary)
 
 		start, err := time.Parse(time.RFC3339, event.Start.DateTime)
 		if err != nil {
@@ -148,7 +192,7 @@ func main() {
 
 		duration := end.Sub(start)
 
-		events_color_time[event.ColorId] = append(events_color_time[event.ColorId], struct {
+		eventsColorTime[event.ColorId] = append(eventsColorTime[event.ColorId], struct {
 			Start    *calendar.EventDateTime
 			End      *calendar.EventDateTime
 			Duration time.Duration
@@ -159,7 +203,11 @@ func main() {
 		})
 	}
 
-	for i, k := range events_color_time {
-		fmt.Printf("ColorId: %s, duration: %s\n", i, k)
-	}
+	// for i, k := range eventsColorTime {
+	// 	for _, v := range k {
+	// 		fmt.Printf("ColorId: %s, event: %s\n", i, v)
+	// 	}
+	// }
+
+	statistics(eventsColorTime, timeStart, timeEnd)
 }
