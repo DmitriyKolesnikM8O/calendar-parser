@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 	"time"
 
+	"github.com/go-echarts/go-echarts/v2/charts"
+	"github.com/go-echarts/go-echarts/v2/opts"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/calendar/v3"
@@ -21,17 +24,21 @@ _ - синий цвет
 3 - фиолетовый цвет
 4 - фламинго
 5 - желтый
+8 - серый
+11 - ярко красный
 */
 
 var (
 	tokenFile  = "token.json"
 	colorNames = map[string]string{
-		"6": "red",
-		"2": "green",
-		"":  "blue",
-		"3": "violet",
-		"4": "flamingo",
-		"5": "yellow",
+		"6":  "red",
+		"2":  "green",
+		"":   "blue",
+		"3":  "violet",
+		"4":  "flamingo",
+		"5":  "yellow",
+		"8":  "grey",
+		"11": "bright red",
 	}
 )
 
@@ -85,12 +92,15 @@ func saveToken(path string, token *oauth2.Token) error {
 }
 
 // TODO: it is bad to send struct as parameter???????
+// TODO: too much function, I think need separated functions
+// TODO:duration in minutes -> duration in hours?????
 func statistics(eventsColorTime map[string][]struct {
 	Start    *calendar.EventDateTime
 	End      *calendar.EventDateTime
 	Duration time.Duration
 }, timeStart string, timeEnd string) {
 
+	eventsColorSummaryTimeInMinutes := make(map[string]int)
 	for colorID, timeRanges := range eventsColorTime {
 		color := colorNames[colorID]
 		if color == "" {
@@ -100,12 +110,61 @@ func statistics(eventsColorTime map[string][]struct {
 		for _, timeRange := range timeRanges {
 			totalTimeForEveryColorMinutes += int(timeRange.Duration/time.Second) / 60
 		}
+		eventsColorSummaryTimeInMinutes[color] = totalTimeForEveryColorMinutes
 		totalTimeForEveryColorHours := totalTimeForEveryColorMinutes / 60
 		totalTimeForEveryColorMinutes %= 60
 		fmt.Printf("Total time for color %s on period from %s to %s - %d hourse %d minutes\n", color, timeStart, timeEnd, totalTimeForEveryColorHours,
 			totalTimeForEveryColorMinutes)
-
 	}
+
+	keys := make([]string, 0, len(eventsColorSummaryTimeInMinutes))
+	for key := range eventsColorSummaryTimeInMinutes {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return eventsColorSummaryTimeInMinutes[keys[i]] < eventsColorSummaryTimeInMinutes[keys[j]]
+	})
+
+	colorMap := map[string]string{
+		"flamingo":   "#FC8EAC",
+		"violet":     "#9B2AC9",
+		"yellow":     "#EFD10F",
+		"blue":       "#1634DB",
+		"green":      "#17D427",
+		"bright red": "#FF0000",
+		"red":        "#E3450B",
+		"grey":       "#7D7877",
+	}
+
+	var values []opts.BarData
+	for _, colorId := range keys {
+		values = append(values, opts.BarData{
+			Value: eventsColorSummaryTimeInMinutes[colorId],
+			Name:  "Duration in minutes",
+			ItemStyle: &opts.ItemStyle{
+				Color: colorMap[colorId],
+			},
+		})
+	}
+
+	bar := charts.NewBar()
+
+	bar.SetGlobalOptions(charts.WithTitleOpts(opts.Title{
+		Title: "Diagramm for spended time",
+	}), charts.WithAnimation(true), charts.WithXAxisOpts(opts.XAxis{
+		Name: "color",
+	}), charts.WithYAxisOpts(opts.YAxis{
+		Name: "Duration in minutes",
+	}))
+
+	bar.SetXAxis(keys).AddSeries("Time", values)
+
+	f, _ := os.Create("bar.html")
+	bar.Render(f)
+
+	// for _, key := range keys {
+	// 	fmt.Printf("%s %d\n", key, eventsColorSummaryTimeInMinutes[key])
+	// }
 
 }
 
@@ -177,17 +236,31 @@ func main() {
 	})
 	for _, event := range events.Items {
 		// fmt.Printf("ColorId: %s Creator: %s, Start: %s, End: %s, Summary: %s\n", event.ColorId, event.Creator, event.Start, event.End,
-		// event.Summary)
+		// 	event.Summary)
 
-		start, err := time.Parse(time.RFC3339, event.Start.DateTime)
-		if err != nil {
-			log.Println("error parsing start time: %v", err)
-			return
+		var start, end time.Time
+		if event.Start.DateTime == "" {
+			start, err = time.Parse("2006-01-02", event.Start.Date)
+			if err != nil {
+				log.Fatalf("error parsing start time: %v", err)
+			}
+		} else {
+			start, err = time.Parse(time.RFC3339, event.Start.DateTime)
+			if err != nil {
+				log.Fatalf("error parsing start time: %v", err)
+			}
 		}
-		end, err := time.Parse(time.RFC3339, event.End.DateTime)
-		if err != nil {
-			log.Println("error parsing end time: %v", err)
-			return
+
+		if event.Start.DateTime == "" {
+			end, err = time.Parse("2006-01-02", event.End.Date)
+			if err != nil {
+				log.Fatalf("error parsing end time: %v", err)
+			}
+		} else {
+			end, err = time.Parse(time.RFC3339, event.End.DateTime)
+			if err != nil {
+				log.Fatalf("error parsing end time: %v", err)
+			}
 		}
 
 		duration := end.Sub(start)
