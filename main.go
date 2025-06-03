@@ -150,11 +150,24 @@ func statistics(eventsColorTime map[string][]struct {
 	bar := charts.NewBar()
 
 	bar.SetGlobalOptions(charts.WithTitleOpts(opts.Title{
-		Title: "Diagramm for spended time",
+		Title: "Diagramm of spended time",
 	}), charts.WithAnimation(true), charts.WithXAxisOpts(opts.XAxis{
 		Name: "color",
 	}), charts.WithYAxisOpts(opts.YAxis{
 		Name: "Duration in minutes",
+	}), charts.WithLegendOpts(opts.Legend{
+		Data: []string{
+			"Yellow - time instead",
+			"Red - important events",
+			"Grey - trains",
+			"Blue - useful activities",
+			"Bright Red - another option for important events",
+			"Green - sleep",
+			"Violet - useless activities",
+			"Flamingo - cooking and eating",
+		},
+		Top:   "10%",
+		Right: "80%",
 	}))
 
 	bar.SetXAxis(keys).AddSeries("Time", values)
