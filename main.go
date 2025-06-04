@@ -26,6 +26,7 @@ _ - синий цвет
 5 - желтый
 8 - серый
 11 - ярко красный
+7 - павлин
 */
 
 var (
@@ -39,6 +40,7 @@ var (
 		"5":  "yellow",
 		"8":  "grey",
 		"11": "bright red",
+		"7":  "bright blue",
 	}
 
 	timeStart, timeEnd string
@@ -138,25 +140,27 @@ func statistics(eventsColorTime map[string][]struct {
 	})
 
 	colorMap := map[string]string{
-		"flamingo":   "#DE8157",
-		"violet":     "#9B2AC9",
-		"yellow":     "#EFD10F",
-		"blue":       "#1634DB",
-		"green":      "#17D427",
-		"bright red": "#FF0000",
-		"red":        "#E3450B",
-		"grey":       "#7D7877",
+		"flamingo":    "#DE8157",
+		"violet":      "#9B2AC9",
+		"yellow":      "#EFD10F",
+		"blue":        "#1634DB",
+		"green":       "#17D427",
+		"bright red":  "#FF0000",
+		"red":         "#E3450B",
+		"grey":        "#7D7877",
+		"bright blue": "#031D9C",
 	}
 
 	description := map[string]string{
-		"yellow":     "time instead",
-		"red":        "important events",
-		"grey":       "trains",
-		"blue":       "useful activities",
-		"bright red": "another option for important events",
-		"green":      "sleep",
-		"violet":     "useless activities",
-		"flamingo":   "cooking and eating",
+		"yellow":      "time instead",
+		"red":         "important events",
+		"grey":        "trains",
+		"blue":        "useful activities",
+		"bright red":  "another option for important events",
+		"green":       "sleep",
+		"violet":      "useless activities",
+		"flamingo":    "cooking and eating",
+		"bright blue": "anouther useful activities",
 	}
 
 	var values []opts.BarData
@@ -269,7 +273,7 @@ func main() {
 		}
 		AllEvents = append(AllEvents, events)
 		pageToken = events.NextPageToken
-		fmt.Println(pageToken)
+		// fmt.Println(pageToken)
 		if pageToken == "" {
 			break
 		}
@@ -282,8 +286,8 @@ func main() {
 	})
 	for _, events := range AllEvents {
 		for _, event := range events.Items {
-			fmt.Printf("ColorId: %s Creator: %s, Start: %s, End: %s, Summary: %s\n", event.ColorId, event.Creator, event.Start, event.End,
-				event.Summary)
+			// fmt.Printf("ColorId: %s Creator: %s, Start: %s, End: %s, Summary: %s\n", event.ColorId, event.Creator, event.Start, event.End,
+			// 	event.Summary)
 
 			var start, end time.Time
 			if event.Start.DateTime == "" {
@@ -324,11 +328,11 @@ func main() {
 		}
 	}
 
-	for i, k := range eventsColorTime {
-		for _, v := range k {
-			fmt.Printf("ColorId: %s, event: %s\n", i, v)
-		}
-	}
+	// for i, k := range eventsColorTime {
+	// 	for _, v := range k {
+	// 		fmt.Printf("ColorId: %s, event: %s\n", i, v)
+	// 	}
+	// }
 
 	statistics(eventsColorTime, timeStart, timeEnd)
 }
