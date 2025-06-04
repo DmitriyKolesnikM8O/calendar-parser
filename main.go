@@ -91,6 +91,12 @@ func saveToken(path string, token *oauth2.Token) error {
 	return json.NewEncoder(f).Encode(token)
 }
 
+func formatHours(hours float64) string {
+	h := int(hours)
+	m := int((hours - float64(h)) * 60)
+	return fmt.Sprintf("%d h. %02d min.", h, m)
+}
+
 // TODO: it is bad to send struct as parameter???????
 // TODO: too much function, I think need separated functions
 // TODO:duration in minutes -> duration in hours?????
@@ -100,7 +106,7 @@ func statistics(eventsColorTime map[string][]struct {
 	Duration time.Duration
 }, timeStart string, timeEnd string) {
 
-	eventsColorSummaryTimeInMinutes := make(map[string]int)
+	eventsColorSummaryTimeInHours := make(map[string]float64)
 	for colorID, timeRanges := range eventsColorTime {
 		color := colorNames[colorID]
 		if color == "" {
@@ -110,23 +116,23 @@ func statistics(eventsColorTime map[string][]struct {
 		for _, timeRange := range timeRanges {
 			totalTimeForEveryColorMinutes += int(timeRange.Duration/time.Second) / 60
 		}
-		eventsColorSummaryTimeInMinutes[color] = totalTimeForEveryColorMinutes
+		eventsColorSummaryTimeInHours[color] = float64(totalTimeForEveryColorMinutes) / float64(60)
 		totalTimeForEveryColorHours := totalTimeForEveryColorMinutes / 60
 		totalTimeForEveryColorMinutes %= 60
 		fmt.Printf("Total time for color %s on period from %s to %s - %d hourse %d minutes\n", color, timeStart, timeEnd, totalTimeForEveryColorHours,
 			totalTimeForEveryColorMinutes)
 	}
 
-	keys := make([]string, 0, len(eventsColorSummaryTimeInMinutes))
-	for key := range eventsColorSummaryTimeInMinutes {
+	keys := make([]string, 0, len(eventsColorSummaryTimeInHours))
+	for key := range eventsColorSummaryTimeInHours {
 		keys = append(keys, key)
 	}
 	sort.Slice(keys, func(i, j int) bool {
-		return eventsColorSummaryTimeInMinutes[keys[i]] < eventsColorSummaryTimeInMinutes[keys[j]]
+		return eventsColorSummaryTimeInHours[keys[i]] < eventsColorSummaryTimeInHours[keys[j]]
 	})
 
 	colorMap := map[string]string{
-		"flamingo":   "#FC8EAC",
+		"flamingo":   "#DE8157",
 		"violet":     "#9B2AC9",
 		"yellow":     "#EFD10F",
 		"blue":       "#1634DB",
@@ -136,11 +142,22 @@ func statistics(eventsColorTime map[string][]struct {
 		"grey":       "#7D7877",
 	}
 
+	description := map[string]string{
+		"yellow":     "time instead",
+		"red":        "important events",
+		"grey":       "trains",
+		"blue":       "useful activities",
+		"bright red": "another option for important events",
+		"green":      "sleep",
+		"violet":     "useless activities",
+		"flamingo":   "cooking and eating",
+	}
+
 	var values []opts.BarData
 	for _, colorId := range keys {
 		values = append(values, opts.BarData{
-			Value: eventsColorSummaryTimeInMinutes[colorId],
-			Name:  "Duration in minutes",
+			Value: eventsColorSummaryTimeInHours[colorId],
+			Name:  fmt.Sprintf("%s - (%s)", description[colorId], formatHours(eventsColorSummaryTimeInHours[colorId])),
 			ItemStyle: &opts.ItemStyle{
 				Color: colorMap[colorId],
 			},
@@ -154,7 +171,7 @@ func statistics(eventsColorTime map[string][]struct {
 	}), charts.WithAnimation(true), charts.WithXAxisOpts(opts.XAxis{
 		Name: "color",
 	}), charts.WithYAxisOpts(opts.YAxis{
-		Name: "Duration in minutes",
+		Name: "Duration in hours",
 	}), charts.WithLegendOpts(opts.Legend{
 		Data: []string{
 			"Yellow - time instead",
