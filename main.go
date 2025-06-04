@@ -40,6 +40,8 @@ var (
 		"8":  "grey",
 		"11": "bright red",
 	}
+
+	timeStart, timeEnd string
 )
 
 func getToken(config *oauth2.Config) (*oauth2.Token, error) {
@@ -112,15 +114,19 @@ func statistics(eventsColorTime map[string][]struct {
 		if color == "" {
 			log.Printf("error when parsing color in statistics func\n")
 		}
-		totalTimeForEveryColorMinutes := 0
+
+		var totalDuration time.Duration
+
 		for _, timeRange := range timeRanges {
-			totalTimeForEveryColorMinutes += int(timeRange.Duration/time.Second) / 60
+			totalDuration += timeRange.Duration
 		}
-		eventsColorSummaryTimeInHours[color] = float64(totalTimeForEveryColorMinutes) / float64(60)
-		totalTimeForEveryColorHours := totalTimeForEveryColorMinutes / 60
-		totalTimeForEveryColorMinutes %= 60
-		fmt.Printf("Total time for color %s on period from %s to %s - %d hourse %d minutes\n", color, timeStart, timeEnd, totalTimeForEveryColorHours,
-			totalTimeForEveryColorMinutes)
+		totalHours := totalDuration.Hours()
+		fullHours := int(totalHours)
+		minutes := int((totalHours - float64(fullHours)) * 60)
+
+		eventsColorSummaryTimeInHours[color] = totalHours
+		fmt.Printf("Total time for color %s on period from %s to %s - %d h. %d m.\n",
+			color, timeStart, timeEnd, fullHours, minutes)
 	}
 
 	keys := make([]string, 0, len(eventsColorSummaryTimeInHours))
@@ -167,7 +173,7 @@ func statistics(eventsColorTime map[string][]struct {
 	bar := charts.NewBar()
 
 	bar.SetGlobalOptions(charts.WithTitleOpts(opts.Title{
-		Title: "Diagramm of spended time",
+		Title: "Diagramm of spended time from " + timeStart + " to " + timeEnd,
 	}), charts.WithAnimation(true), charts.WithXAxisOpts(opts.XAxis{
 		Name: "color",
 	}), charts.WithYAxisOpts(opts.YAxis{
@@ -243,7 +249,6 @@ func main() {
 		log.Fatalf("error when parsing number of calendar: %v", err)
 	}
 
-	var timeStart, timeEnd string
 	fmt.Printf("Write time start for parsing (format: YYYY-MM-DD): ")
 	_, err = fmt.Scanf("%s", &timeStart)
 	if err != nil {
@@ -255,62 +260,75 @@ func main() {
 		log.Fatalf("error when parsing time end of events: %v", err)
 	}
 
-	events, err := srv.Events.List(listsOfCalendars[numberOfCalendar]).TimeMin(timeStart + "T10:00:00+03:00").TimeMax(timeEnd + "T10:00:00+03:00").Do()
-	if err != nil {
-		log.Fatalf("error when receive events: %v", err)
+	var AllEvents []*calendar.Events
+	pageToken := ""
+	for {
+		events, err := srv.Events.List(listsOfCalendars[numberOfCalendar]).TimeMin(timeStart + "T10:00:00+03:00").TimeMax(timeEnd + "T23:59:59+03:00").PageToken(pageToken).Do()
+		if err != nil {
+			log.Fatalf("error when receive events: %v", err)
+		}
+		AllEvents = append(AllEvents, events)
+		pageToken = events.NextPageToken
+		fmt.Println(pageToken)
+		if pageToken == "" {
+			break
+		}
+
 	}
 
 	eventsColorTime := make(map[string][]struct {
 		Start, End *calendar.EventDateTime
 		Duration   time.Duration
 	})
-	for _, event := range events.Items {
-		// fmt.Printf("ColorId: %s Creator: %s, Start: %s, End: %s, Summary: %s\n", event.ColorId, event.Creator, event.Start, event.End,
-		// 	event.Summary)
+	for _, events := range AllEvents {
+		for _, event := range events.Items {
+			fmt.Printf("ColorId: %s Creator: %s, Start: %s, End: %s, Summary: %s\n", event.ColorId, event.Creator, event.Start, event.End,
+				event.Summary)
 
-		var start, end time.Time
-		if event.Start.DateTime == "" {
-			start, err = time.Parse("2006-01-02", event.Start.Date)
-			if err != nil {
-				log.Fatalf("error parsing start time: %v", err)
+			var start, end time.Time
+			if event.Start.DateTime == "" {
+				start, err = time.Parse("2006-01-02", event.Start.Date)
+				if err != nil {
+					log.Fatalf("error parsing start time: %v", err)
+				}
+			} else {
+				start, err = time.Parse(time.RFC3339, event.Start.DateTime)
+				if err != nil {
+					log.Fatalf("error parsing start time: %v", err)
+				}
 			}
-		} else {
-			start, err = time.Parse(time.RFC3339, event.Start.DateTime)
-			if err != nil {
-				log.Fatalf("error parsing start time: %v", err)
+
+			if event.Start.DateTime == "" {
+				end, err = time.Parse("2006-01-02", event.End.Date)
+				if err != nil {
+					log.Fatalf("error parsing end time: %v", err)
+				}
+			} else {
+				end, err = time.Parse(time.RFC3339, event.End.DateTime)
+				if err != nil {
+					log.Fatalf("error parsing end time: %v", err)
+				}
 			}
+
+			duration := end.Sub(start)
+
+			eventsColorTime[event.ColorId] = append(eventsColorTime[event.ColorId], struct {
+				Start    *calendar.EventDateTime
+				End      *calendar.EventDateTime
+				Duration time.Duration
+			}{
+				Start:    event.Start,
+				End:      event.End,
+				Duration: duration,
+			})
 		}
-
-		if event.Start.DateTime == "" {
-			end, err = time.Parse("2006-01-02", event.End.Date)
-			if err != nil {
-				log.Fatalf("error parsing end time: %v", err)
-			}
-		} else {
-			end, err = time.Parse(time.RFC3339, event.End.DateTime)
-			if err != nil {
-				log.Fatalf("error parsing end time: %v", err)
-			}
-		}
-
-		duration := end.Sub(start)
-
-		eventsColorTime[event.ColorId] = append(eventsColorTime[event.ColorId], struct {
-			Start    *calendar.EventDateTime
-			End      *calendar.EventDateTime
-			Duration time.Duration
-		}{
-			Start:    event.Start,
-			End:      event.End,
-			Duration: duration,
-		})
 	}
 
-	// for i, k := range eventsColorTime {
-	// 	for _, v := range k {
-	// 		fmt.Printf("ColorId: %s, event: %s\n", i, v)
-	// 	}
-	// }
+	for i, k := range eventsColorTime {
+		for _, v := range k {
+			fmt.Printf("ColorId: %s, event: %s\n", i, v)
+		}
+	}
 
 	statistics(eventsColorTime, timeStart, timeEnd)
 }
