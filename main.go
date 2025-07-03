@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -44,6 +45,8 @@ var (
 	}
 
 	timeStart, timeEnd string
+
+	mode = flag.Bool("gui", false, "Running in GUI mode")
 )
 
 func getToken(config *oauth2.Config) (*oauth2.Token, error) {
@@ -211,6 +214,12 @@ func statistics(eventsColorTime map[string][]struct {
 // TODO: too much main function
 // TODO: long celectors and other garbage in code
 func main() {
+
+	flag.Parse()
+	if *mode || len(os.Args) == 1 {
+		RunGUI()
+	}
+
 	ctx := context.Background()
 
 	b, err := os.ReadFile("credentials.json")
