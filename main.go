@@ -218,6 +218,7 @@ func main() {
 	flag.Parse()
 	if *mode || len(os.Args) == 1 {
 		RunGUI()
+		return
 	}
 
 	ctx := context.Background()
