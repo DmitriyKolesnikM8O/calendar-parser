@@ -4,8 +4,11 @@ import (
 	"flag"
 )
 
+var (
+	mode = flag.Bool("gui", false, "Running in GUI mode")
+)
+
 func main() {
-	mode := flag.Bool("gui", false, "Running in GUI mode")
 
 	flag.Parse()
 	if *mode {
