@@ -1,44 +1,17 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/calendar/v3"
-	"google.golang.org/api/option"
 )
 
 func RunCLI() {
-	ctx := context.Background()
-
-	b, err := os.ReadFile("credentials.json")
+	srv, calendars, err := initializeCalendarService(nil)
 	if err != nil {
-		log.Fatalf("error when reading info from credentials: %v", err)
-	}
-
-	config, err := google.ConfigFromJSON(b, calendar.CalendarReadonlyScope)
-	if err != nil {
-		log.Fatalf("error when load configuration: %v", err)
-	}
-
-	token, err := getToken(config)
-	if err != nil {
-		log.Fatalf("error when try to receive token in main: %v", err)
-	}
-
-	client := config.Client(ctx, token)
-	srv, err := calendar.NewService(ctx, option.WithHTTPClient(client))
-	if err != nil {
-		log.Fatalf("error when creating a service: %v", err)
-	}
-
-	calendars, err := srv.CalendarList.List().Do()
-	if err != nil {
-		log.Fatalf("error when receive a lists of calendars: %v", err)
+		return
 	}
 
 	listsOfCalendars := make(map[int]string)

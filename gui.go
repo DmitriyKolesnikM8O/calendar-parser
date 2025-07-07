@@ -1,10 +1,8 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
-	"os"
 	"os/exec"
 	"runtime"
 	"time"
@@ -16,9 +14,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 
 	"fyne.io/fyne/v2/widget"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/calendar/v3"
-	"google.golang.org/api/option"
 )
 
 func RunGUI() {
@@ -26,36 +22,8 @@ func RunGUI() {
 	w := a.NewWindow("Calendar Parser")
 	w.Resize(fyne.NewSize(900, 600))
 
-	ctx := context.Background()
-
-	b, err := os.ReadFile("credentials.json")
+	srv, calendars, err := initializeCalendarService(w)
 	if err != nil {
-		dialog.ShowError(fmt.Errorf("error reading credentials: %v", err), w)
-		return
-	}
-
-	config, err := google.ConfigFromJSON(b, calendar.CalendarReadonlyScope)
-	if err != nil {
-		dialog.ShowError(fmt.Errorf("error loading configuration: %v", err), w)
-		return
-	}
-
-	token, err := getToken(config)
-	if err != nil {
-		dialog.ShowError(fmt.Errorf("error retrieving token: %v", err), w)
-		return
-	}
-
-	client := config.Client(ctx, token)
-	srv, err := calendar.NewService(ctx, option.WithHTTPClient(client))
-	if err != nil {
-		dialog.ShowError(fmt.Errorf("error creating calendar service: %v", err), w)
-		return
-	}
-
-	calendars, err := srv.CalendarList.List().Do()
-	if err != nil {
-		dialog.ShowError(fmt.Errorf("error retrieving calendars: %v", err), w)
 		return
 	}
 

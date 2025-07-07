@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -12,7 +10,6 @@ import (
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
-	"golang.org/x/oauth2"
 	"google.golang.org/api/calendar/v3"
 )
 
@@ -28,79 +25,79 @@ _ - синий цвет
 7 - павлин
 */
 
-var (
-	tokenFile  = "token.json"
-	colorNames = map[string]string{
-		"6":  "red",
-		"2":  "green",
-		"":   "blue",
-		"3":  "violet",
-		"4":  "flamingo",
-		"5":  "yellow",
-		"8":  "grey",
-		"11": "bright red",
-		"7":  "bright blue",
-	}
+// var (
+// 	tokenFile  = "token.json"
+// 	colorNames = map[string]string{
+// 		"6":  "red",
+// 		"2":  "green",
+// 		"":   "blue",
+// 		"3":  "violet",
+// 		"4":  "flamingo",
+// 		"5":  "yellow",
+// 		"8":  "grey",
+// 		"11": "bright red",
+// 		"7":  "bright blue",
+// 	}
 
-	timeStart, timeEnd string
+// 	timeStart, timeEnd string
 
-	mode = flag.Bool("gui", false, "Running in GUI mode")
-)
+// 	mode = flag.Bool("gui", false, "Running in GUI mode")
+// )
 
-func getToken(config *oauth2.Config) (*oauth2.Token, error) {
+// func getToken(config *oauth2.Config) (*oauth2.Token, error) {
 
-	if token, err := tokenFromFile(tokenFile); err == nil {
-		return token, nil
-	}
+// 	if token, err := tokenFromFile(tokenFile); err == nil {
+// 		return token, nil
+// 	}
 
-	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline, oauth2.ApprovalForce)
-	fmt.Printf("Go to link and auth:\n%v\n", authURL)
-	fmt.Println("write here auth code:")
+// 	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline, oauth2.ApprovalForce)
+// 	fmt.Printf("Go to link and auth:\n%v\n", authURL)
+// 	fmt.Println("write here auth code:")
 
-	var authCode string
-	if _, err := fmt.Scan(&authCode); err != nil {
-		return nil, fmt.Errorf("error when reading auth code: %v", err)
-	}
+// 	var authCode string
+// 	if _, err := fmt.Scan(&authCode); err != nil {
+// 		return nil, fmt.Errorf("error when reading auth code: %v", err)
+// 	}
 
-	token, err := config.Exchange(context.TODO(), authCode)
-	if err != nil {
-		return nil, fmt.Errorf("error when try to receive token: %v", err)
-	}
+// 	token, err := config.Exchange(context.TODO(), authCode)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("error when try to receive token: %v", err)
+// 	}
 
-	if err := saveToken(tokenFile, token); err != nil {
-		log.Printf("ATTEMPT: can`t save token: %v", err)
-	}
+// 	if err := saveToken(tokenFile, token); err != nil {
+// 		log.Printf("ATTEMPT: can`t save token: %v", err)
+// 	}
 
-	return token, nil
-}
+// 	return token, nil
+// }
 
-func tokenFromFile(file string) (*oauth2.Token, error) {
-	f, err := os.Open(file)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
+// func tokenFromFile(file string) (*oauth2.Token, error) {
+// 	f, err := os.Open(file)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer f.Close()
 
-	tok := &oauth2.Token{}
-	err = json.NewDecoder(f).Decode(tok)
-	return tok, err
-}
+// 	tok := &oauth2.Token{}
+// 	err = json.NewDecoder(f).Decode(tok)
+// 	return tok, err
+// }
 
-func saveToken(path string, token *oauth2.Token) error {
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
+// func saveToken(path string, token *oauth2.Token) error {
+// 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer f.Close()
 
-	return json.NewEncoder(f).Encode(token)
-}
+// 	return json.NewEncoder(f).Encode(token)
+// }
 
-func formatHours(hours float64) string {
-	h := int(hours)
-	m := int((hours - float64(h)) * 60)
-	return fmt.Sprintf("%d h. %02d min.", h, m)
-}
+// func formatHours(hours float64) string {
+// 	h := int(hours)
+// 	m := int((hours - float64(h)) * 60)
+// 	return fmt.Sprintf("%d h. %02d min.", h, m)
+// }
 
 func statistics(eventsColorTime map[string][]struct {
 	Start    *calendar.EventDateTime
