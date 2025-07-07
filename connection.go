@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -43,8 +42,6 @@ var (
 	}
 
 	timeStart, timeEnd string
-
-	mode = flag.Bool("gui", false, "Running in GUI mode")
 )
 
 func getToken(config *oauth2.Config) (*oauth2.Token, error) {
