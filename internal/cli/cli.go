@@ -10,10 +10,10 @@ import (
 	"google.golang.org/api/calendar/v3"
 )
 
-func RunCLI() {
+func RunCLI() error {
 	srv, calendars, err := connection.InitializeCalendarService(nil)
 	if err != nil {
-		return
+		return err
 	}
 
 	listsOfCalendars := make(map[int]string)
@@ -27,18 +27,21 @@ func RunCLI() {
 	fmt.Printf("Which calendar could you want to use: ")
 	_, err = fmt.Scanf("%d", &numberOfCalendar)
 	if err != nil {
-		log.Fatalf("error when parsing number of calendar: %v", err)
+		log.Printf("error when parsing number of calendar: %v", err)
+		return err
 	}
 
 	fmt.Printf("Write time start for parsing (format: YYYY-MM-DD): ")
 	_, err = fmt.Scanf("%s", &connection.TimeStart)
 	if err != nil {
-		log.Fatalf("error when parsing time of events: %v", err)
+		log.Printf("error when parsing time of events: %v", err)
+		return err
 	}
 	fmt.Printf("Write time end for parsing (format: YYYY-MM-DD): ")
 	_, err = fmt.Scanf("%s", &connection.TimeEnd)
 	if err != nil {
-		log.Fatalf("error when parsing time end of events: %v", err)
+		log.Printf("error when parsing time end of events: %v", err)
+		return err
 	}
 
 	var AllEvents []*calendar.Events
@@ -46,7 +49,8 @@ func RunCLI() {
 	for {
 		events, err := srv.Events.List(listsOfCalendars[numberOfCalendar]).TimeMin(connection.TimeStart + "T10:00:00+03:00").TimeMax(connection.TimeEnd + "T23:59:59+03:00").PageToken(pageToken).Do()
 		if err != nil {
-			log.Fatalf("error when receive events: %v", err)
+			log.Printf("error when receive events: %v", err)
+			return err
 		}
 		AllEvents = append(AllEvents, events)
 		pageToken = events.NextPageToken
@@ -66,26 +70,30 @@ func RunCLI() {
 
 			var start, end time.Time
 			if event.Start.DateTime == "" {
-				start, err = time.Parse("2006-01-02", event.Start.Date)
+				start, err = time.Parse(connection.DateLayout, event.Start.Date)
 				if err != nil {
-					log.Fatalf("error parsing start time: %v", err)
+					log.Printf("error parsing start time: %v", err)
+					return err
 				}
 			} else {
 				start, err = time.Parse(time.RFC3339, event.Start.DateTime)
 				if err != nil {
-					log.Fatalf("error parsing start time: %v", err)
+					log.Printf("error parsing start time: %v", err)
+					return err
 				}
 			}
 
 			if event.Start.DateTime == "" {
-				end, err = time.Parse("2006-01-02", event.End.Date)
+				end, err = time.Parse(connection.DateLayout, event.End.Date)
 				if err != nil {
-					log.Fatalf("error parsing end time: %v", err)
+					log.Printf("error parsing end time: %v", err)
+					return err
 				}
 			} else {
 				end, err = time.Parse(time.RFC3339, event.End.DateTime)
 				if err != nil {
-					log.Fatalf("error parsing end time: %v", err)
+					log.Printf("error parsing end time: %v", err)
+					return err
 				}
 			}
 
@@ -104,4 +112,6 @@ func RunCLI() {
 	}
 
 	statistics.Statistics(eventsColorTime, connection.TimeStart, connection.TimeEnd)
+
+	return nil
 }

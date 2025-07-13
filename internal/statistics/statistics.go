@@ -24,7 +24,7 @@ func GetDiagramPath() string {
 	_, filename, _, _ := runtime.Caller(0)
 
 	rootDir := filepath.Dir(filepath.Dir(filepath.Dir(filename)))
-	diagramDir := filepath.Join(rootDir, "diagramm")
+	diagramDir := filepath.Join(rootDir, "diagram")
 	os.MkdirAll(diagramDir, 0755)
 
 	return diagramDir
@@ -38,7 +38,7 @@ func Statistics(eventsColorTime map[string][]struct {
 
 	eventsColorSummaryTimeInHours := make(map[string]float64)
 	for colorID, timeRanges := range eventsColorTime {
-		color := connection.ColorNames[colorID]
+		color := connection.Colors[colorID].Name
 		if color == "" {
 			log.Printf("error when parsing color in statistics func\n")
 		}
@@ -65,37 +65,13 @@ func Statistics(eventsColorTime map[string][]struct {
 		return eventsColorSummaryTimeInHours[keys[i]] < eventsColorSummaryTimeInHours[keys[j]]
 	})
 
-	colorMap := map[string]string{
-		"flamingo":    "#DE8157",
-		"violet":      "#9B2AC9",
-		"yellow":      "#EFD10F",
-		"blue":        "#1634DB",
-		"green":       "#17D427",
-		"bright red":  "#FF0000",
-		"red":         "#E3450B",
-		"grey":        "#7D7877",
-		"bright blue": "#031D9C",
-	}
-
-	description := map[string]string{
-		"yellow":      "time instead",
-		"red":         "important events",
-		"grey":        "trains",
-		"blue":        "useful activities",
-		"bright red":  "another option for important events",
-		"green":       "sleep",
-		"violet":      "useless activities",
-		"flamingo":    "cooking and eating",
-		"bright blue": "anouther useful activities",
-	}
-
 	var values []opts.BarData
 	for _, colorId := range keys {
 		values = append(values, opts.BarData{
 			Value: eventsColorSummaryTimeInHours[colorId],
-			Name:  fmt.Sprintf("%s - (%s)", description[colorId], connection.FormatHours(eventsColorSummaryTimeInHours[colorId])),
+			Name:  fmt.Sprintf("%s - (%s)", connection.GetColorDescription(colorId), connection.FormatHours(eventsColorSummaryTimeInHours[colorId])),
 			ItemStyle: &opts.ItemStyle{
-				Color: colorMap[colorId],
+				Color: connection.GetColorHex(colorId),
 			},
 		})
 	}

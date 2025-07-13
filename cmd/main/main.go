@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"log"
 
 	"github.com/DmitriyKolesnikM8O/calendar-parser/internal/cli"
 	"github.com/DmitriyKolesnikM8O/calendar-parser/internal/gui"
@@ -15,10 +16,15 @@ func main() {
 
 	flag.Parse()
 	if *mode {
-		gui.RunGUI()
-		return
+		err := gui.RunGUI()
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
 	} else {
-		cli.RunCLI()
+		err := cli.RunCLI()
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
 	}
 
 }

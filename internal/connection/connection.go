@@ -30,19 +30,10 @@ _ - синий цвет
 */
 
 var (
-	tokenFile  = "token.json"
-	ColorNames = map[string]string{
-		"6":  "red",
-		"2":  "green",
-		"":   "blue",
-		"3":  "violet",
-		"4":  "flamingo",
-		"5":  "yellow",
-		"8":  "grey",
-		"11": "bright red",
-		"7":  "bright blue",
-	}
-
+	tokenFile          = "token.json"
+	DateLayout         = "2006-01-02"
+	DateTimeShiftMin   = "T00:00:00+03:00"
+	DateTimeShiftMax   = "T23:59:59+03:00"
 	TimeStart, TimeEnd string
 )
 

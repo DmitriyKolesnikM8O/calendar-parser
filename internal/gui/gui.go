@@ -2,7 +2,6 @@ package gui
 
 import (
 	"fmt"
-	"log"
 	"os/exec"
 	"runtime"
 	"time"
@@ -19,14 +18,14 @@ import (
 	"google.golang.org/api/calendar/v3"
 )
 
-func RunGUI() {
+func RunGUI() error {
 	a := app.New()
 	w := a.NewWindow("Calendar Parser")
 	w.Resize(fyne.NewSize(900, 600))
 
 	srv, calendars, err := connection.InitializeCalendarService(w)
 	if err != nil {
-		return
+		return err
 	}
 
 	calendarOptions := make([]string, 0, len(calendars.Items))
@@ -61,12 +60,12 @@ func RunGUI() {
 
 	submitButton.OnTapped = func() {
 
-		_, err := time.Parse("2006-01-02", dateFrom.Text)
+		_, err := time.Parse(connection.DateLayout, dateFrom.Text)
 		if err != nil {
 			dialog.ShowError(fmt.Errorf("invalid start date format: %v", err), w)
 			return
 		}
-		_, err = time.Parse("2006-01-02", dateTo.Text)
+		_, err = time.Parse(connection.DateLayout, dateTo.Text)
 		if err != nil {
 			dialog.ShowError(fmt.Errorf("invalid end date format: %v", err), w)
 			return
@@ -82,8 +81,8 @@ func RunGUI() {
 		pageToken := ""
 		for {
 			events, err := srv.Events.List(calendarID).
-				TimeMin(dateFrom.Text + "T00:00:00+03:00").
-				TimeMax(dateTo.Text + "T23:59:59+03:00").
+				TimeMin(dateFrom.Text + connection.DateTimeShiftMin).
+				TimeMax(dateTo.Text + connection.DateTimeShiftMax).
 				PageToken(pageToken).
 				Do()
 			if err != nil {
@@ -94,22 +93,22 @@ func RunGUI() {
 			for _, event := range events.Items {
 				var start, end time.Time
 				if event.Start.DateTime == "" {
-					start, err = time.Parse("2006-01-02", event.Start.Date)
+					start, err = time.Parse(connection.DateLayout, event.Start.Date)
 				} else {
 					start, err = time.Parse(time.RFC3339, event.Start.DateTime)
 				}
 				if err != nil {
-					log.Printf("error parsing start time: %v", err)
+					dialog.ShowError(fmt.Errorf("error parsing start time: %v", err), w)
 					continue
 				}
 
 				if event.End.DateTime == "" {
-					end, err = time.Parse("2006-01-02", event.End.Date)
+					end, err = time.Parse(connection.DateLayout, event.End.Date)
 				} else {
 					end, err = time.Parse(time.RFC3339, event.End.DateTime)
 				}
 				if err != nil {
-					log.Printf("error parsing end time: %v", err)
+					dialog.ShowError(fmt.Errorf("error parsing end time: %v", err), w)
 					continue
 				}
 
@@ -134,7 +133,7 @@ func RunGUI() {
 		eventsColorSummaryTimeInHours := make(map[string]float64)
 		var resultText string
 		for colorID, timeRanges := range eventsColorTime {
-			color := connection.ColorNames[colorID]
+			color := connection.Colors[colorID].Name
 			if color == "" {
 				color = "unknown"
 			}
@@ -181,4 +180,6 @@ func RunGUI() {
 
 	w.SetContent(leftPanel)
 	w.ShowAndRun()
+
+	return nil
 }
