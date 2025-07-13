@@ -43,6 +43,7 @@ func RunGUI() {
 	}
 	dateFrom := widget.NewEntry()
 	dateFrom.SetPlaceHolder("YYYY-MM-DD")
+
 	dateTo := widget.NewEntry()
 	dateTo.SetPlaceHolder("YYYY-MM-DD")
 	resultLabel := widget.NewLabel("Results will appear here after submission.")
