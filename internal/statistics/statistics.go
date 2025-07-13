@@ -15,6 +15,10 @@ import (
 	"google.golang.org/api/calendar/v3"
 )
 
+var (
+	OutputPath string
+)
+
 func GetDiagramPath() string {
 
 	_, filename, _, _ := runtime.Caller(0)
@@ -23,7 +27,7 @@ func GetDiagramPath() string {
 	diagramDir := filepath.Join(rootDir, "diagramm")
 	os.MkdirAll(diagramDir, 0755)
 
-	return filepath.Join(diagramDir, "bar.html")
+	return diagramDir
 }
 
 func Statistics(eventsColorTime map[string][]struct {
@@ -121,8 +125,8 @@ func Statistics(eventsColorTime map[string][]struct {
 
 	bar.SetXAxis(keys).AddSeries("Time", values)
 
-	outputPath := GetDiagramPath()
-	f, err := os.Create(outputPath)
+	OutputPath = filepath.Join(GetDiagramPath(), timeStart+" - "+timeEnd+".html")
+	f, err := os.Create(OutputPath)
 	if err != nil {
 		log.Fatalf("Unable to read credentials file: %v", err)
 	}

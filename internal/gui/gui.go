@@ -159,11 +159,11 @@ func RunGUI() {
 		var cmd *exec.Cmd
 		switch runtime.GOOS {
 		case "windows":
-			cmd = exec.Command("start", statistics.GetDiagramPath())
+			cmd = exec.Command("start", statistics.OutputPath)
 		case "darwin":
-			cmd = exec.Command("open", statistics.GetDiagramPath())
+			cmd = exec.Command("open", statistics.OutputPath)
 		default:
-			cmd = exec.Command("xdg-open", statistics.GetDiagramPath())
+			cmd = exec.Command("xdg-open", statistics.OutputPath)
 		}
 		if err := cmd.Run(); err != nil {
 			dialog.ShowError(fmt.Errorf("error opening chart: %v", err), w)
