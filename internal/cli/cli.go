@@ -10,7 +10,7 @@ import (
 	"google.golang.org/api/calendar/v3"
 )
 
-func RunCLI() error {
+func RunCLI(charType string) error {
 	srv, calendars, err := connection.InitializeCalendarService(nil)
 	if err != nil {
 		return err
